@@ -68,6 +68,16 @@ void loop() {
         Serial.print(data.RangeData[i].RangeMilliMeter);
         Serial.print(" mm status=");
         Serial.println(data.RangeData[i].RangeStatus);
+        // Simulated low-ball-level warning threshold
+       const int LOW_BALL_THRESHOLD_MM = 50;
+
+       int distance = data.RangeData[i].RangeMilliMeter;
+
+       if (distance >= LOW_BALL_THRESHOLD_MM) {
+          Serial.println(">>> WARNING: LOW BALL LEVEL <<<");
+       } else {
+          Serial.println("Ball level OK");
+       }
       }
     }
 
