@@ -1,51 +1,42 @@
 # NXTektal Sensor Prototype
 
-Sensor prototype developed for NXTektal's robotic platform.
+Working source for NXTektal's golf ball-bin ToF distance sensor and SX1262 LoRa link. The original standalone sensor sketch is preserved as [sketch_aug15b.ino](sketch_aug15b.ino).
 
-This repository contains the Arduino firmware used to test and integrate a VL53L4CX Time-of-Flight (ToF) distance sensor with a Heltec Wireless Tracker development board.
+## Latest firmware: v5 (October 2026)
 
-## Current Prototype
+- **TX (transmitter):** VL53L4CX distance sampling on a Heltec Wireless Tracker, validates the sensor reading and sends a JSON LoRa packet with `box_id`, `distance_mm`, `range_status`, `level`, and `seq` approximately every 3 seconds during bench testing.
+- **RX (receiver):** Heltec Wireless Tracker listens for packets, reports RSSI/SNR over USB serial, and displays distance, ball level and link status.
+- **Display:** official NXTektal NX mark and green italic NXTektal wordmark in a non-blocking five-second startup animation, then TX/RX status screens; `LOW` is yellow on both screens, `OK` green, errors red.
+- The radio parameters currently match on TX/RX: 915 MHz, 125 kHz bandwidth, spreading factor 7 and coding rate 4/5.
+- **Field validation:** The earlier integrated sensor/LoRa firmware successfully demonstrated live distance changes sent from TX to RX in a desktop test. This v5 display revision still requires final on-device Verify/Upload and physical regression testing.
 
-The current prototype can:
+## Sketch layout
 
-- Initialize the VL53L4CX ToF sensor
-- Communicate with the sensor through I2C
-- Continuously monitor measurement readiness
-- Detect objects
-- Measure object distance in millimeters
-- Report sensor measurement status through Serial Monitor
-- Restart measurements continuously
+```text
+firmware/
+  NXTektal_TX_Display/
+    NXTektal_TX_Display.ino
+    NXTektal_Display.h
+  NXTektal_RX_Display/
+    NXTektal_RX_Display.ino
+    NXTektal_Display.h
+```
 
-## Hardware
+Keep each `.ino` in the same folder as its matching `NXTektal_Display.h`. In Arduino IDE, select **Heltec Wireless Tracker** (first-generation option) and the actual COM port for the connected board.
 
-### Main Controller
-- Heltec Wireless Tracker
+**Dependencies:** Heltec ESP32 Arduino board package, Heltec ESP32 Dev-Boards library (`LoRaWan_APP.h`, `HT_st7735.h`), and STM32duino VL53L4CX library for the transmitter.
 
-### Distance Sensor
-- STMicroelectronics VL53L4CX
-- Time-of-Flight (ToF) ranging sensor
+**Bench wiring (existing prototype, check actual board pin labeling):** SDA GPIO45, SCL GPIO46, XSHUT GPIO44. The ESP32-S3 has special-purpose boot-related pins, so do not assume this wiring generalizes to other boards.
 
-## Pin Configuration
+## Testing and deployment limits
 
-Current firmware configuration:
+- `LOW_BALL_THRESHOLD_MM = 50` is a **demonstration distance threshold**, not a calibrated 20% fill-level rule; use real empty/half/full bin measurements before making operational decisions.
+- 3-second packets are for bench testing. An operational 2–3 minute interval, filtering, calibration, packet-delivery checks and gateway integration are still pending.
+- A standalone LoRa receiver only prints data to its serial connection. Sending data onward to Insite/Agent or Dashboard needs a gateway bridge (e.g. serial-to-HTTP/MQTT).
+- Current 915 MHz RF settings are for the US test hardware; recheck RF-band rules and hardware before deployments elsewhere.
+- Attach the LoRa antenna before transmitting. TX and RX boards can run from independent suitable 5 V USB supplies.
+- The branded screen images are encoded in the shared header; no image files are required for flashing.
 
-| Function | Heltec GPIO |
-|---|---:|
-| SDA | GPIO 45 |
-| SCL | GPIO 46 |
-| XSHUT | GPIO 44 |
-| GND | GND |
-| Power | Sensor-compatible supply |
+## Handoff
 
-> Always disconnect power before changing jumper-wire connections.
-
-## Communication
-
-The sensor communicates with the Heltec board using I2C.
-
-Current configuration:
-
-```cpp
-#define SDA_PIN 45
-#define SCL_PIN 46
-#define XSHUT_PIN 44
+For company integration, preserve the same two sketch directories and the shared display header. Update the upstream system only after interface ownership, wire format and integration tests are confirmed.
